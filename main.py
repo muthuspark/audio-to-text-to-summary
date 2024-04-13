@@ -2,6 +2,7 @@ import logging
 import os
 import tempfile
 
+import google.generativeai as genai
 import openai
 from dotenv import dotenv_values
 from flask import Flask, request
@@ -14,7 +15,8 @@ from util import random_name, is_mp3, is_wav, combine_same_successive_speaker_di
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 config = dotenv_values(".env")
-
+genai.configure(api_key=config.get("GEMINI_API_KEY"))
+model = genai.GenerativeModel('gemini-1.0-pro-latest')
 # API key does not need to be valid
 openai.base_url = config.get("OPEN_AI_BASE_URL")
 openai.api_key = config.get("OPEN_AI_API_KEY")
@@ -93,6 +95,11 @@ def chat_with_llm(message):
     return completion.choices[0].message.content
 
 
+def ask_gemini(message):
+    chat = model.start_chat(history=[])
+    return chat.send_message(message).text
+
+
 @app.route('/summarize_conversation', methods=['POST'])
 def summarize_conversation():
     json_data = request.json
@@ -111,7 +118,7 @@ def summarize_conversation():
         logging.debug(f'Transcribing complete')
         dialogues = '\n'.join(dialogues)
         message = f"Give me a long summary of this conversation \n {dialogues}"
-        return {'summary': chat_with_llm(message), 'transcript': dialogues}
+        return {'summary': ask_gemini(message), 'transcript': dialogues}
 
     logging.debug(f'Unknown file format')
     return "error"
