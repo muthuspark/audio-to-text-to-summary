@@ -1,0 +1,10 @@
+pydub==0.25.1
+pyannote.audio==3.1.1
+python-dotenv
+transformers~=4.39.3
+google-generativeai==0.4.0
+google-api-python-client==2.121.0
+requests~=2.31.0
+Flask~=3.0.0
+accelerate
+openai==1.13.3

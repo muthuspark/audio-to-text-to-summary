@@ -1,0 +1,5 @@
+.idea/
+venv
+.env
+__pycache__/
+.idea/misc.xml
