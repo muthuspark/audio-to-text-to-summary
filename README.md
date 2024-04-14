@@ -6,24 +6,20 @@ LLM) can be integrated into this pipeline.
 
 The steps involved are:
 
-1. **Speech-to-Text Transcription:** Tools like Kaldi or Mozilla DeepSpeech can be used to convert the audio dialogue
-   into a text transcript.
-2. **Summarization with Open-Source LLM:** We can utilize GeminiAI or other open-source LLMs like BART or T5 to generate
-   a concise summary of the text transcript.
+![Audio to Summary](process.png)
 
-This is a simple example, but it highlights the potential of building speech summarization pipelines using freely
-available resources.
+The diagram shows a flowchart depicting a process for converting an MP3 audio file to a WAV file, separating speakers in the audio using diarization, splitting the audio based on speaker turns, and then summarizing the conversation. 
 
-**Additional Considerations:**
+Here's a breakdown of the process:
 
-* **Language Support:** Ensure the chosen speech-to-text and summarization tools support the language of the audio
-  dialogue.
-* **Accuracy:** Both speech recognition and summarization involve complexities that can impact accuracy. Consider
-  techniques to improve these aspects.
-* **Deployment:** The pipeline can be further developed for deployment as a web service or standalone application.
+**Process Breakdown:**
 
-This revised version clarifies the purpose, mentions specific open-source tools, and suggests improvements for a more
-robust pipeline.
+1. **Convert MP3 to WAV (if required):** The first step checks if the input is an MP3 file. If so, it's converted to WAV format, likely because diarization tools often work better with WAV files.
+2. **Perform Audio Diarization:** Diarization is applied to distinguish between speakers in the audio. The specific library used here is `pyannote/speaker-diarization-3.1`.
+3. **Split the Audio based on Start and End Time:** The diarization outputs speaker timestamps as start, end, speaker_id. This step splits the audio file into separate segments based on those speaker turns. The library used here is `openai/whisper-large-v3`.
+4. **Concatenate the Output and Summarize the Conversation:** The final step involves combining the speaker-separated audio segment texts (concatenation) and summarizing the conversation. The summarization can be done using `GeminiAI`, `OpenAI`, or local AI models.
+
+This is a simple example, but it highlights the potential of building speech summarization pipelines using freely available resources.
 
 ### Pre-Requisites
 
