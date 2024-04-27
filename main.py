@@ -5,7 +5,7 @@ import tempfile
 import google.generativeai as genai
 import openai
 from dotenv import dotenv_values
-from flask import Flask, request
+from flask import Flask, request, send_from_directory
 from pydub import AudioSegment
 
 from pipelines import diarization_pipeline, audio_transcription_pipeline
@@ -23,6 +23,33 @@ openai.api_key = config.get("OPEN_AI_API_KEY")
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = config.get("FLASK_SECRET_KEY")
+
+
+@app.route('/css/<path:path>')
+def serve_css(path):
+    return send_from_directory('webapp/dist/css', path)
+
+
+@app.route('/js/<path:path>')
+def serve_js(path):
+    return send_from_directory('webapp/dist/js', path)
+
+
+@app.route('/')
+def index():
+    return send_from_directory('webapp/dist', "index.html")
+
+
+@app.route('/upload', methods=['POST'])
+def upload_audio():
+    if 'audio' not in request.files:
+        return 'No audio file part'
+    audio = request.files['audio']
+    if audio.filename == '':
+        return 'No selected audio file'
+    # Save or process the uploaded audio file here
+    audio.save(f'recordings/{audio.filename}')
+    return 'Audio uploaded successfully'
 
 
 @app.errorhandler(Exception)  # Catches all exceptions
