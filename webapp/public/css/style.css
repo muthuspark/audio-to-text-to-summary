@@ -106,14 +106,6 @@ button.delete {
     border: none;
 }
 
-.container {
-    height: 8em;
-}
-
-.container canvas {
-    border-radius: 12px;
-}
-
 .main-controls {
     display: flex;
     flex-direction: column;
@@ -131,10 +123,6 @@ button.delete {
     justify-content: center;
     align-items: center;
     flex-direction: column;
-}
-
-.btncontainer .time-display{
-    height: 20px;
 }
 
 .main-controls-content {

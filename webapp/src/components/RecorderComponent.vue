@@ -2,62 +2,41 @@
   <div class="wrapper">
     <section class="main-controls">
       <div class="main-controls-content">
-        <div class="container" id="container"></div>
+        <AudioVisualizer :stream="stream" v-if="stream"></AudioVisualizer>
         <div class="btncontainer">
           <div id="buttons">
-            <button class="record"><div class="circle" ></div></button>
-            <button class="stop"><div class="square" ></div></button>
+            <div v-show="!recording" ><button class="record" @click="record"><div class="circle" ></div></button><span>Record</span></div>
+            <div v-show="recording" ><button class="stop" @click="stop"><div class="square" ></div></button><span>Stop</span></div>
           </div>
-          <div class="time-display"><span v-show="isRunning" >{{ formattedTime }}</span></div>
+          <StopWatch ref="stopWatch"></StopWatch>
         </div>
       </div>
     </section>
     <section class="sound-clips">
+      <SoundClip v-for="(clip, index) in audioClips" :name="clip.name" :source="clip.source" :blob="clip.blob" :key="index"></SoundClip>
     </section>
   </div>
 </template>
 <script>
-import AudioMotionAnalyzer from 'audiomotion-analyzer';
-import downloadIcon from '../assets/download.png';
-import deleteIcon from '../assets/delete.png';
-const icons = {
-  'download' : downloadIcon,
-  'delete' : deleteIcon
-}
+import AudioVisualizer from './AudioVisualizer.vue'
+import StopWatch from './StopWatch.vue'
+import SoundClip from './SoundClip.vue'
 export default {
   name: 'RecorderComponent',
+  components: {
+    AudioVisualizer,
+    StopWatch,
+    SoundClip
+, },
   data() {
     return {
-      elapsedTime: 0,
-      isRunning: false,
-      intervalId: null,
-      icons: icons
+      stream: null,
+      recording: false,
+      mediaRecorder: null,
+      audioClips: []
     } 
   },
-  computed: {
-    formattedTime() {
-      const seconds = Math.floor(this.elapsedTime / 1000) % 60;
-      const minutes = Math.floor(this.elapsedTime / (1000 * 60)) % 60;
-      const hours = Math.floor(this.elapsedTime / (1000 * 60 * 60));
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    },
-  },
   methods: {
-    startStop() {
-      if (this.isRunning) {
-        clearInterval(this.intervalId);
-      } else {
-        this.intervalId = setInterval(() => {
-          this.elapsedTime += 10;
-        }, 10);
-      }
-      this.isRunning = !this.isRunning;
-    },
-    reset() {
-      clearInterval(this.intervalId);
-      this.elapsedTime = 0;
-      this.isRunning = false;
-    },
     getFormattedDate() {
       const today = new Date();
       const dd = String(today.getDate()).padStart(2, '0');
@@ -71,24 +50,21 @@ export default {
       const formattedDate = `${dd}:${mm}:${yyyy} ${hour}:${minutes}:${seconds}`;
       return formattedDate;
     },
-    getIcon(name) {
-      const img = document.createElement('img');
-      img.src = this.icons[name];
-      return img;
+    initEvents() {
+      this.emitter.on('recording-started', () => this.recording = true)
+      this.emitter.on('recording-stopped', () => this.recording = false)
+    },
+    record() {
+      this.emitter.emit('recording-started')
+      this.mediaRecorder.start();
+    },
+    stop() {
+      this.emitter.emit('recording-stopped')
+      this.mediaRecorder.stop();
     }
   },
   mounted() {
-      // Set up basic variables for app
-      const record = document.querySelector(".record");
-      const stop = document.querySelector(".stop");
-      const soundClips = document.querySelector(".sound-clips");
-
-      // Disable stop button while not recording
-      stop.disabled = true;
-      stop.style.display = "none";
-
-      let audioCtx;
-
+      this.initEvents();
       const app = this;
       // Main block for doing the audio recording
       if (navigator.mediaDevices.getUserMedia) {
@@ -98,111 +74,23 @@ export default {
         let chunks = [];
 
         let onSuccess = function (stream) {
-          const mediaRecorder = new MediaRecorder(stream);
+          app.mediaRecorder = new MediaRecorder(stream);
+          app.stream = stream;
 
-          // visualize(stream);
-          if (!audioCtx) {
-            audioCtx = new AudioContext();
-          }
-          const audioMotion = new AudioMotionAnalyzer(
-            document.getElementById('container'),
-            {
-              source: audioCtx.createMediaStreamSource(stream)
-            }
-          );
-
-          audioMotion.setOptions(  {
-            mode: 10,
-            bgAlpha: .7,
-            fillAlpha: .6,
-            gradient: 'steelblue',
-            lineWidth: 2,
-            lumiBars: false,
-            maxFreq: 16000,
-            radial: false,
-            reflexAlpha: 1,
-            linearAmplitude: true,
-            linearBoost: 1.5,
-            reflexBright: 1,
-            reflexRatio: .5,
-            showScaleX: false,
-            showBgColor: false,
-            roundBars: true,
-            showPeaks: false,
-            moothing: 0.8,
-            overlay: true
-          } );
-
-          record.onclick = function () {
-            mediaRecorder.start();
-            app.reset();
-            app.startStop();
-            console.log(mediaRecorder.state);
-            console.log("Recorder started.");
-            record.style.display = "none";
-            stop.style.display = "flex";
-
-            stop.disabled = false;
-            record.disabled = true;
-          };
-
-          stop.onclick = function () {
-            mediaRecorder.stop();
-            app.startStop();
-            console.log(mediaRecorder.state);
-            console.log("Recorder stopped.");
-            record.style.display = "flex";
-            stop.style.display = "none";
-
-            stop.disabled = true;
-            record.disabled = false;
-          };
-
-          mediaRecorder.onstop = function (e) {
+          app.mediaRecorder.onstop = function (e) {
             console.log("Last data to read (after MediaRecorder.stop() called).", e);
-
-            const clipContainer = document.createElement("div");
-            const clipLabel = document.createElement("p");
-            clipLabel.className = "audioname";
-            const audio = document.createElement("audio");
-            const deleteButton = document.createElement("button");
-            deleteButton.className = "icons";
-            const downloadButton = document.createElement("button");
-            const downloadLink = document.createElement("a");
-            downloadButton.appendChild(downloadLink);
-            downloadButton.className = "icons";
-
-            clipContainer.classList.add("clip");
-            audio.setAttribute("controls", "");
-
-            downloadLink.appendChild(app.getIcon("download"));
-            deleteButton.appendChild(app.getIcon("delete"));
-
-            clipLabel.textContent = `Recording - ${app.getFormattedDate()}`;
-
-            clipContainer.appendChild(clipLabel);
-            clipContainer.appendChild(audio);
-            clipContainer.appendChild(downloadButton);
-            clipContainer.appendChild(deleteButton);
-            soundClips.appendChild(clipContainer);
-
-            audio.controls = true;
-            const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
-            
+            const blob = new Blob(chunks, { type: app.mediaRecorder.mimeType }); 
             chunks = [];
-            const audioURL = window.URL.createObjectURL(blob);
-            audio.src = audioURL;
-
-            downloadLink.href = audioURL;
-            downloadLink.download = `${clipLabel.textContent}.wav`;
+            app.audioClips.push({
+              'name': `Recording - ${app.getFormattedDate()}`,
+              'source': window.URL.createObjectURL(blob),
+              'download': `Recording - ${app.getFormattedDate()}.wav`,
+              'blob':blob
+            });
             
             console.log("recorder stopped");
 
-            deleteButton.onclick = function (e) {
-              e.target.closest(".clip").remove();
-            };
-
-            clipLabel.onclick = function () {
+            /*clipLabel.onclick = function () {
               const existingName = clipLabel.textContent;
               const newClipName = prompt("Enter a new name for your sound clip?");
               if (newClipName === null) {
@@ -229,10 +117,10 @@ export default {
             .catch(error => {
               console.error('Error uploading audio:', error);
             });
-
+*/
           };
 
-          mediaRecorder.ondataavailable = function (e) {
+          app.mediaRecorder.ondataavailable = function (e) {
             chunks.push(e.data);
           };
         };
