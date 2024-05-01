@@ -1,8 +1,9 @@
 <template>
-  <h1>Audio to Summary</h1>
-  <RecorderComponent/>
+  <header><h1>Audio to Summary</h1></header>
+  <main class="container-fluid" >
+    <RecorderComponent/>
+  </main>
 </template>
-
 <script>
 import RecorderComponent from './components/RecorderComponent.vue'
 

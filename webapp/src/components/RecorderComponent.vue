@@ -1,52 +1,65 @@
 <template>
-  <div class="wrapper">
-    <section class="main-controls">
-      <div class="main-controls-content">
-        <AudioVisualizer :stream="stream" v-if="stream"></AudioVisualizer>
-        <div class="btncontainer">
-          <div id="buttons">
-            <div v-show="!recording"><button class="record" @click="record">
-                <div class="circle"></div>
-              </button><span>Record</span></div>
-            <div v-show="recording"><button class="stop" @click="stop">
-                <div class="square"></div>
-              </button><span>Stop</span></div>
-          </div>
-          <StopWatch ref="stopWatch"></StopWatch>
+  <section>
+      <article>
+        <header>
+          <AudioVisualizer :stream="stream" v-if="stream"></AudioVisualizer>
+        </header>
+        <div v-show="!recording">
+          <button class="record" @click="record">
+            <span>Record</span>
+          </button>
         </div>
-      </div>
-    </section>
-    <section class="sound-clips">
-      <SoundClip v-for="(clip, index) in audioClips" :name="clip.name" :source="clip.source" :blob="clip.blob"
-        :key="index"></SoundClip>
-    </section>
-  </div>
+        <div v-show="recording">
+          <button class="stop" @click="stop">
+            <span>Stop</span>
+          </button>
+        </div>
+        <footer>
+          <StopWatch ref="stopWatch"></StopWatch>
+        </footer>
+      </article>
+  </section>
+  <section>
+    <article>
+      <header>Current Recordings</header>
+      <SoundClip v-for="(clip, index) in audioClips" :data="clip" :key="index"></SoundClip>
+    </article>
+  </section>
+  <section>
+    <article>
+      <header>Summaries</header>
+      <SummariesComponent v-for="(clip, index) in summarizedRecordings" :data="clip" :key="index"></SummariesComponent>
+    </article>
+  </section>
 </template>
 <script>
 import AudioVisualizer from './AudioVisualizer.vue'
 import StopWatch from './StopWatch.vue'
 import SoundClip from './SoundClip.vue'
+import SummariesComponent from './SummariesComponent.vue'
 import { getFormattedDate } from '../util'
 export default {
   name: 'RecorderComponent',
   components: {
     AudioVisualizer,
     StopWatch,
-    SoundClip
-    ,
+    SoundClip,
+    SummariesComponent
   },
   data() {
     return {
       stream: null,
       recording: false,
       mediaRecorder: null,
-      audioClips: []
+      audioClips: [],
+      summarizedRecordings: []
     }
   },
   methods: {
     initEvents() {
       this.emitter.on('recording-started', () => this.recording = true)
       this.emitter.on('recording-stopped', () => this.recording = false)
+      this.emitter.on('reload-soundclips', () => this.getAllSummaries())
     },
     record() {
       this.emitter.emit('recording-started')
@@ -55,10 +68,23 @@ export default {
     stop() {
       this.emitter.emit('recording-stopped')
       this.mediaRecorder.stop();
+    },
+    getAllSummaries() {
+      const app = this;
+      fetch('/get_summaries', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+          console.log(data);
+          app.summarizedRecordings = data;
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
     }
   },
   mounted() {
     this.initEvents();
+    this.getAllSummaries();
     const app = this;
     // Main block for doing the audio recording
     if (navigator.mediaDevices.getUserMedia) {
@@ -79,7 +105,7 @@ export default {
           app.audioClips.push({
             'name': `Recording - ${name}`,
             'source': window.URL.createObjectURL(blob),
-            'download': `Recording - ${name}.wav`,
+            'download': `Recording - ${name}.webm`,
             'blob': blob
           });
           console.log("recorder stopped");

@@ -8,3 +8,4 @@ requests~=2.31.0
 Flask~=3.0.0
 accelerate
 openai==1.13.3
+tinydb

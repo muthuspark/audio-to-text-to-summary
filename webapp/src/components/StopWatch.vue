@@ -1,5 +1,5 @@
 <template>
-    <div class="time-display"><span v-show="isRunning" >{{ formattedTime }}</span></div>
+    <div class="time-display">{{ formattedTime }}</div>
 </template>
 <script>
 export default {
@@ -50,8 +50,3 @@ export default {
 }
 
 </script>
-<style scoped>
-.time-display{
-    height: 20px;
-}
-</style>
