@@ -1,11 +1,12 @@
 <template>
   <section>
-      <article>
-        <header>
-          <AudioVisualizer :stream="stream" v-if="stream"></AudioVisualizer>
-        </header>
+    <article>
+      <header>
+        <AudioVisualizer :stream="stream" v-if="stream"></AudioVisualizer>
+      </header>
+      <div class="recording-actions">
         <div v-show="!recording">
-          <button class="record" @click="record">
+          <button class="record" @click="record" :disabled="!recordingSupported">
             <span>Record</span>
           </button>
         </div>
@@ -14,10 +15,14 @@
             <span>Stop</span>
           </button>
         </div>
-        <footer>
-          <StopWatch ref="stopWatch"></StopWatch>
-        </footer>
-      </article>
+        <small id="invalid-helper" v-if="!recordingSupported">
+          MediaDevices recording not supported on your browser!
+        </small>
+      </div>
+      <footer class="center">
+        <StopWatch ref="stopWatch"></StopWatch>
+      </footer>
+    </article>
   </section>
   <section>
     <article>
@@ -38,6 +43,7 @@ import StopWatch from './StopWatch.vue'
 import SoundClip from './SoundClip.vue'
 import SummariesComponent from './SummariesComponent.vue'
 import { getFormattedDate } from '../util'
+import { getSummaries } from '../api'
 export default {
   name: 'RecorderComponent',
   components: {
@@ -49,78 +55,72 @@ export default {
   data() {
     return {
       stream: null,
-      recording: false,
+      unsupported: true,
+      recordingSupported: false,
       mediaRecorder: null,
       audioClips: [],
-      summarizedRecordings: []
+      summarizedRecordings: [],
+      chunks: []
     }
   },
   methods: {
     initEvents() {
       this.emitter.on('recording-started', () => this.recording = true)
       this.emitter.on('recording-stopped', () => this.recording = false)
-      this.emitter.on('reload-soundclips', () => this.getAllSummaries())
+      this.emitter.on('reload-soundclips', this.summaries)
     },
-    record() {
-      this.emitter.emit('recording-started')
-      this.mediaRecorder.start();
+    mediaRecorderOnStop({ data }) {
+      console.log("Last data to read (after MediaRecorder.stop() called).", data);
+      const blob = new Blob(this.chunks, { type: this.mediaRecorder.mimeType });
+      this.chunks = [];
+      const name = getFormattedDate();
+      this.audioClips.push({
+        name: `Recording - ${name}`,
+        source: window.URL.createObjectURL(blob),
+        download: `Recording - ${name}.webm`,
+        blob,
+      });
+      console.log("recorder stopped");
+    },
+    mediaRecorderOndataavailable({ data }) {
+      this.chunks.push(data);
+    },
+    async getUserMediaOnSuccess(stream) {
+      try {
+        this.mediaRecorder = new MediaRecorder(stream);
+        this.stream = stream;
+        this.mediaRecorder.onstop = this.mediaRecorderOnStop;
+        this.mediaRecorder.ondataavailable = this.mediaRecorderOndataavailable;
+        await this.mediaRecorder.start();
+      } catch (error) {
+        console.error('Error starting MediaRecorder:', error);
+      }
+    },
+    async record() {
+      this.emitter.emit('recording-started');
+      const constraints = { audio: true };
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        await this.getUserMediaOnSuccess(stream);
+      } catch (error) {
+        console.error('Error getting user media:', error);
+      }
     },
     stop() {
       this.emitter.emit('recording-stopped')
       this.mediaRecorder.stop();
+      this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
     },
-    getAllSummaries() {
-      const app = this;
-      fetch('/get_summaries', { method: 'POST' })
-        .then(response => response.json())
-        .then(data => {
-          console.log(data);
-          app.summarizedRecordings = data;
-        })
-        .catch(error => {
-          console.error('Error:', error);
-        });
+    async summaries() {
+      this.summarizedRecordings = await getSummaries()
     }
   },
   mounted() {
-    this.initEvents();
-    this.getAllSummaries();
-    const app = this;
-    // Main block for doing the audio recording
+    this.summaries();
     if (navigator.mediaDevices.getUserMedia) {
+      this.recordingSupported = true;
+      this.initEvents();
       console.log("The mediaDevices.getUserMedia() method is supported.");
-
-      const constraints = { audio: true };
-      let chunks = [];
-
-      let onSuccess = function (stream) {
-        app.mediaRecorder = new MediaRecorder(stream);
-        app.stream = stream;
-
-        app.mediaRecorder.onstop = function (e) {
-          console.log("Last data to read (after MediaRecorder.stop() called).", e);
-          const blob = new Blob(chunks, { type: app.mediaRecorder.mimeType });
-          chunks = [];
-          const name = getFormattedDate();
-          app.audioClips.push({
-            'name': `Recording - ${name}`,
-            'source': window.URL.createObjectURL(blob),
-            'download': `Recording - ${name}.webm`,
-            'blob': blob
-          });
-          console.log("recorder stopped");
-        };
-
-        app.mediaRecorder.ondataavailable = function (e) {
-          chunks.push(e.data);
-        };
-      };
-
-      let onError = function (err) {
-        console.log("The following error occured: " + err);
-      };
-
-      navigator.mediaDevices.getUserMedia(constraints).then(onSuccess, onError);
     } else {
       console.log("MediaDevices.getUserMedia() not supported on your browser!");
     }

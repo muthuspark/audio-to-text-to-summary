@@ -15,3 +15,18 @@ h1 {
 .sound-clips button img {
     width: 25px;
 }
+
+.recording-actions {
+    display: flex;
+    flex-direction: column;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+}
+.center{
+    text-align: center;
+}
+
+#invalid-helper{
+ color:#D93526
+}
