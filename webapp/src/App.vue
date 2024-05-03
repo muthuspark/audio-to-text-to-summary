@@ -1,5 +1,5 @@
 <template>
-  <header><h1>Audio to Summary</h1></header>
+  <header><h1>SpeechSynopsis</h1></header>
   <main class="container-fluid" >
     <RecorderComponent/>
   </main>

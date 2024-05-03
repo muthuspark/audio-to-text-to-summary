@@ -1,5 +1,5 @@
 <template>
-    <div class="clip">
+    <div class="clip" :id="data.name">
         <nav>
             <ul>
                 <li><strong>{{ data.name }}</strong></li>
@@ -8,17 +8,12 @@
                 <li><audio controls="true" :src="data.source"></audio></li>
             </ul>
             <ul>
-                <li><button title="Summarize" class="contrast" @click="summarize">
-                        Summarize
-                    </button></li>
                 <li><button title="Download" class="contrast">
                         <a :href="data.source" :download="data.source">
                             Download
                         </a>
-                    </button></li>
-                <li><button title="Delete" class="contrast" @click="remove">
-                        Delete
-                    </button></li>
+                    </button>
+                </li>
             </ul>
         </nav>
         <progress v-if="summarizing" />
@@ -29,7 +24,7 @@
 export default {
     data() {
         return {
-            summarizing: false,
+            summarizing: false
         }
     },
     props: {
@@ -57,6 +52,7 @@ export default {
                             clearInterval(clrInterval);
                             app.summarizing = false;
                             app.emitter.emit('reload-soundclips');
+                            app.remove();
                         }
                     })
                     .catch(error => {
@@ -64,8 +60,8 @@ export default {
                     });
             }, 5000);
         },
-        remove(e) {
-            e.target.closest(".clip").remove();
+        remove() {
+            document.getElementById(this.data.name).remove();
         },
         summarize() {
             const app = this;
@@ -84,6 +80,9 @@ export default {
                     console.error('Error uploading audio:', error);
                 });
         }
+    },
+    mounted() {
+        this.summarize()
     }
 }
 </script>

@@ -1,4 +1,4 @@
-# webapp
+# SpeechSynopsis
 
 ## Project setup
 ```

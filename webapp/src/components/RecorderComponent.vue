@@ -24,9 +24,9 @@
       </footer>
     </article>
   </section>
-  <section>
+  <section v-if="audioClips.length">
     <article>
-      <header>Current Recordings</header>
+      <header>Summarization in progress</header>
       <SoundClip v-for="(clip, index) in audioClips" :data="clip" :key="index"></SoundClip>
     </article>
   </section>
@@ -42,8 +42,8 @@ import AudioVisualizer from './AudioVisualizer.vue'
 import StopWatch from './StopWatch.vue'
 import SoundClip from './SoundClip.vue'
 import SummariesComponent from './SummariesComponent.vue'
-import { getFormattedDate } from '../util'
-import { getSummaries } from '../api'
+import { getFormattedDate } from '@/util'
+import { getSummaries } from '@/api'
 export default {
   name: 'RecorderComponent',
   components: {
