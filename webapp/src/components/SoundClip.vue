@@ -1,26 +1,21 @@
 <template>
     <div class="clip" :id="data.name">
-        <nav>
-            <ul>
-                <li><strong>{{ data.name }}</strong></li>
-            </ul>
-            <ul>
-                <li><audio controls="true" :src="data.source"></audio></li>
-            </ul>
-            <ul>
-                <li><button title="Download" class="contrast">
-                        <a :href="data.source" :download="data.source">
-                            Download
-                        </a>
-                    </button>
-                </li>
-            </ul>
-        </nav>
-        <progress v-if="summarizing" />
-        <hr>
+        <div class="row">
+            <div class="eight columns">{{ data.name }}</div>
+            <div class="four columns summarizing">Summarizing.. <progress v-if="summarizing" /></div>
+        </div>
+        <div class="row">
+            <div class="twelve columns"><WaveSurfer :src="data.source"></WaveSurfer></div>
+            <!-- <div class="two columns">
+                <a :href="data.source" class="button" :download="data.source">
+                    Download
+                </a>
+            </div> -->
+        </div>
     </div>
 </template>
 <script>
+import WaveSurfer from './WaveSurfer';
 export default {
     data() {
         return {
@@ -29,6 +24,9 @@ export default {
     },
     props: {
         data: Object
+    },
+    components: {
+        WaveSurfer
     },
     methods: {
         checkIfSummaryCompleted(recordingName) {
@@ -86,3 +84,18 @@ export default {
     }
 }
 </script>
+<style scoped >
+.summarizing {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    align-content: center;
+    flex-direction: row;
+}
+.clip{
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 2rem;
+}
+</style>

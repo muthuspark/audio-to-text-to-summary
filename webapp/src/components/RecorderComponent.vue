@@ -1,41 +1,40 @@
 <template>
-  <section>
-    <article>
-      <header>
-        <AudioVisualizer :stream="stream" v-if="stream"></AudioVisualizer>
-      </header>
-      <div class="recording-actions">
-        <div v-show="!recording">
-          <button class="record" @click="record" :disabled="!recordingSupported">
-            <span>Record</span>
-          </button>
+  <div >
+    <div class="docs-section">
+      <article>
+        <header>
+          <AudioVisualizer :stream="stream" v-show="stream"></AudioVisualizer>
+        </header>
+        <div class="recording-actions">
+          <div v-show="!recording">
+            <button class="button-primary" @click="record" :disabled="!recordingSupported">
+              <span>Record</span>
+            </button>
+          </div>
+          <div v-show="recording">
+            <button class="button-primary" @click="stop">
+              <span>Stop</span>
+            </button>
+          </div>
+          <small id="invalid-helper" v-if="!recordingSupported">
+            MediaDevices recording not supported on your browser!
+          </small>
         </div>
-        <div v-show="recording">
-          <button class="stop" @click="stop">
-            <span>Stop</span>
-          </button>
-        </div>
-        <small id="invalid-helper" v-if="!recordingSupported">
-          MediaDevices recording not supported on your browser!
-        </small>
-      </div>
-      <footer class="center">
-        <StopWatch ref="stopWatch"></StopWatch>
-      </footer>
-    </article>
-  </section>
-  <section v-if="audioClips.length">
-    <article>
-      <header>Summarization in progress</header>
+        <footer class="center">
+          <StopWatch ref="stopWatch"></StopWatch>
+        </footer>
+      </article>
+    </div>
+    <div class="docs-section" v-if="audioClips.length">
+      <h6 class="docs-header">Summarization in progress</h6>
       <SoundClip v-for="(clip, index) in audioClips" :data="clip" :key="index"></SoundClip>
-    </article>
-  </section>
-  <section>
-    <article>
-      <header>Summaries</header>
-      <SummariesComponent v-for="(clip, index) in summarizedRecordings" :data="clip" :key="index"></SummariesComponent>
-    </article>
-  </section>
+    </div>
+    <div class="docs-section">
+      <h6 class="docs-header">Summaries</h6>
+      <SummariesComponent v-for="(clip, index) in summarizedRecordings" :data="clip" :key="index">
+      </SummariesComponent>
+    </div>
+  </div>
 </template>
 <script>
 import AudioVisualizer from './AudioVisualizer.vue'

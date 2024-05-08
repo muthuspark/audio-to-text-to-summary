@@ -1,8 +1,14 @@
 <template>
-  <header><h1>SpeechSynopsis</h1></header>
-  <main class="container-fluid" >
+  <div class="container">
+    <nav class="navbar">
+      <div class="container">
+        <ul class="navbar-list">
+          <li class="navbar-item"><a class="navbar-link" href="#"><strong>Speech Synopsis</strong></a></li>
+        </ul>
+      </div>
+    </nav>
     <RecorderComponent/>
-  </main>
+  </div>
 </template>
 <script>
 import RecorderComponent from './components/RecorderComponent.vue'

@@ -1,6 +1,5 @@
 import { createApp } from 'vue'
 import App from './App.vue'
-import '@picocss/pico/css/pico.min.css';
 // using ES6 modules
 import mitt from 'mitt'
 
