@@ -1,9 +1,12 @@
 <template>
-  <div >
+  <div>
     <div class="docs-section">
+      <h5 v-if="title">
+        <input type="text" v-model="title" maxlength="100" class="title-input">
+      </h5>
       <article>
         <header>
-          <AudioVisualizer :stream="stream" v-show="stream"></AudioVisualizer>
+          <AudioVisualizer :stream="stream" v-if="stream"></AudioVisualizer>
         </header>
         <div class="recording-actions">
           <div v-show="!recording">
@@ -20,12 +23,15 @@
             MediaDevices recording not supported on your browser!
           </small>
         </div>
-        <footer class="center">
+        <div class="center">
           <StopWatch ref="stopWatch"></StopWatch>
-        </footer>
+        </div>
+        <div class="docs-pad">
+          <p>{{ transcript }}</p>
+        </div>
       </article>
     </div>
-    <div class="docs-section" v-if="audioClips.length">
+    <div class="docs-section" v-if="audioClips.length > 0">
       <h6 class="docs-header">Summarization in progress</h6>
       <SoundClip v-for="(clip, index) in audioClips" :data="clip" :key="index"></SoundClip>
     </div>
@@ -41,8 +47,9 @@ import AudioVisualizer from './AudioVisualizer.vue'
 import StopWatch from './StopWatch.vue'
 import SoundClip from './SoundClip.vue'
 import SummariesComponent from './SummariesComponent.vue'
-import { getFormattedDate } from '@/util'
+import { getFormattedDate, slugify } from '@/util'
 import { getSummaries } from '@/api'
+
 export default {
   name: 'RecorderComponent',
   components: {
@@ -54,32 +61,62 @@ export default {
   data() {
     return {
       stream: null,
-      unsupported: true,
-      recordingSupported: false,
+      recording: false,
+      recordingSupported: true,
       mediaRecorder: null,
       audioClips: [],
       summarizedRecordings: [],
-      chunks: []
+      chunks: [],
+      recognition: null,
+      title: '',
+      transcript: ''
     }
   },
   methods: {
     initEvents() {
       this.emitter.on('recording-started', () => this.recording = true)
-      this.emitter.on('recording-stopped', () => this.recording = false)
+      this.emitter.on('recording-stopped', () => {
+        this.recording = false;
+        this.title = '';
+      })
       this.emitter.on('reload-soundclips', this.summaries)
+    },
+    initSpeechRecognizer() {
+      this.recognition = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
+      this.recognition.interimResults = true;
+      this.recognition.continuous = true;
+
+      this.recognition.onresult = event => {
+        let transcript = '';
+
+        for (const result of event.results) {
+          for (const alternative of result) {
+            transcript += alternative.transcript;
+          }
+        }
+        this.transcript = transcript;
+      };
+
+      this.recognition.onerror = event => {
+        console.error('Speech recognition error:', event.error);
+      };
+
+      this.recognition.onnomatch = () => {
+        console.log('No speech was recognized.');
+      };
     },
     mediaRecorderOnStop({ data }) {
       console.log("Last data to read (after MediaRecorder.stop() called).", data);
       const blob = new Blob(this.chunks, { type: this.mediaRecorder.mimeType });
       this.chunks = [];
-      const name = getFormattedDate();
       this.audioClips.push({
-        name: `Recording - ${name}`,
+        name: encodeURI(`${this.title}`),
         source: window.URL.createObjectURL(blob),
-        download: `Recording - ${name}.webm`,
+        download: `${slugify(this.title)}.webm`,
         blob,
       });
       console.log("recorder stopped");
+      this.emitter.emit('recording-stopped');
     },
     mediaRecorderOndataavailable({ data }) {
       this.chunks.push(data);
@@ -97,17 +134,21 @@ export default {
     },
     async record() {
       this.emitter.emit('recording-started');
+      this.transcript = '';
+      this.title = `Recording - ${getFormattedDate()}`;
+      this.recognition.start();
       const constraints = { audio: true };
       try {
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         await this.getUserMediaOnSuccess(stream);
       } catch (error) {
+        this.recordingSupported = false;
         console.error('Error getting user media:', error);
       }
     },
     stop() {
-      this.emitter.emit('recording-stopped')
       this.mediaRecorder.stop();
+      this.recognition.stop();
       this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
     },
     async summaries() {
@@ -116,13 +157,13 @@ export default {
   },
   mounted() {
     this.summaries();
-    if (navigator.mediaDevices.getUserMedia) {
-      this.recordingSupported = true;
-      this.initEvents();
-      console.log("The mediaDevices.getUserMedia() method is supported.");
-    } else {
-      console.log("MediaDevices.getUserMedia() not supported on your browser!");
-    }
+    this.initSpeechRecognizer();
+    this.initEvents();
   }
 }
 </script>
+<style scoped>
+.title-input {
+  width: 100%;
+}
+</style>

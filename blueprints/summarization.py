@@ -12,10 +12,9 @@ from dotenv import dotenv_values
 from llm import chat_with_llama
 from pipelines import diarization_pipeline, audio_transcription_pipeline
 from utilities.database import create_record, update_tracks, update_transcript, update_summary, get_by_id, get_all, \
-    update_audio_file_name, is_summarizing_completed_for_recording
+    update_audio_file_name, is_summarizing_completed_for_recording, remove, update_recording_name
 from utilities.request_queue import PersistentQueue
-from utilities.util import random_name, is_mp3, is_wav, is_webm, get_filename_without_extension, get_path_in_wav_format, \
-    get_parent_directory
+from utilities.util import is_mp3, is_wav, is_webm, get_path_in_wav_format
 from pydub import AudioSegment
 from logging_config import logger
 
@@ -36,6 +35,21 @@ def summarize_conversation():
 @summarize_routes_blueprint.route('/get_summaries', methods=['POST'])
 def get_summaries():
     return get_all()
+
+
+@summarize_routes_blueprint.route('/remove_summary', methods=['POST'])
+def remove_summary():
+    json_data = request.json
+    audio_file_name = json_data['audio_file_name']
+    return remove(audio_file_name)
+
+
+@summarize_routes_blueprint.route('/update_title', methods=['POST'])
+def update_title():
+    json_data = request.json
+    audio_file_name = json_data['audio_file_name']
+    recording_name = json_data['recording_name']
+    return update_recording_name(audio_file_name, recording_name)
 
 
 @summarize_routes_blueprint.route('/summarizing_completed', methods=['POST'])

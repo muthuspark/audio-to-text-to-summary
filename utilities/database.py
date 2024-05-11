@@ -1,4 +1,4 @@
-from tinydb import TinyDB, Query
+from tinydb import TinyDB, Query, where
 
 _db = TinyDB("database.json")
 
@@ -44,12 +44,22 @@ def update_summary(audio_id, summary):
     }, doc_ids=[audio_id])
 
 
+def update_recording_name(audio_id, recording_name):
+    _db.update({
+        'recording_name': recording_name
+    }, doc_ids=[audio_id])
+
+
 def get_by_id(audio_id):
     return _db.get(TranscriptQuery.doc_id.matches(audio_id))
 
 
 def get_all():
     return _db.all()
+
+
+def remove(audio_file_name):
+    return _db.remove(TranscriptQuery.audio_file_name.matches(audio_file_name))
 
 
 def is_summarizing_completed_for_recording(recording_name):

@@ -8,6 +8,7 @@
       </div>
     </nav>
     <RecorderComponent/>
+    <vue3-confirm-dialog></vue3-confirm-dialog>
   </div>
 </template>
 <script>

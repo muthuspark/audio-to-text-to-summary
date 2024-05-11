@@ -2,7 +2,8 @@
     <div class="clip">
         <div class="row" @click="toggle">
             <div class="ten columns">
-                {{ data.recording_name }}
+                <span @input="updateText" @keydown.enter.prevent @blur="postUpdate" contenteditable="true">{{
+                    decodeURI(data.recording_name) }}</span>
             </div>
             <div class="two columns">
                 <a class="u-pull-right">
@@ -10,12 +11,6 @@
                     <i class="icon si-chevron-down" v-show="show"></i>
                 </a>
             </div>
-            <!-- <div class="four columns"><a :href="data.audio_file_name" title="Download" vv class="u-pull-right"
-                        :download="data.audio_file_name">
-                        <i class="icon si-download"></i>
-                    </a><a title="Delete" href="#" class="u-pull-right" @click="remove">
-                        <i class="icon si-trash"></i>
-                    </a></div> -->
         </div>
         <div v-show="show">
             <div class="row">
@@ -26,28 +21,37 @@
             <div class="row">
                 <div class="eight columns">
                     <div class="small-header">Full Transcript</div>
-                    <p v-html="formatTranscript(data.transcript)"></p>
+                    <p v-html="formatText(data.transcript)"></p>
                 </div>
                 <div class="four columns">
                     <div class="small-header">Summary</div>
-                    <p v-if="data.summary.length">{{ data.summary }}</p>
+                    <p v-if="data.summary.length" v-html="formatText(data.summary)"></p>
                     <div v-if="data.summary.length == 0">
                         <div>Summarization in progress</div>
                         <progress />
                     </div>
                 </div>
             </div>
+            <div class="row">
+                <div class="four columns"><a :href="data.audio_file_name" title="Download"
+                        :download="data.audio_file_name">
+                        <i class="icon si-download"></i>
+                    </a><a title="Delete" @click="confirmRemove">
+                        <i class="icon si-trash"></i>
+                    </a></div>
+            </div>
+
         </div>
     </div>
 </template>
 <script>
-import { removeSummary } from '@/api';
+import { removeSummary, updateRecordingName } from '@/api';
 import WaveSurfer from './WaveSurfer';
-
 export default {
     data() {
         return {
-            show: false
+            show: false,
+            editText: ''
         }
     },
     components: {
@@ -57,18 +61,40 @@ export default {
         data: Object
     },
     methods: {
+        confirmRemove() {
+            const app = this;
+            this.$confirm(
+                {
+                    message: 'Are you sure you want to delete this item?',
+                    button: {
+                        no: 'No',
+                        yes: 'Yes'
+                    },
+                    /**
+                    * Callback Function
+                    * @param {Boolean} confirm
+                    */
+                    callback: async confirm => {
+                        if (confirm) {
+                            await app.remove()
+                        }
+                    }
+                }
+            )
+        },
+        postUpdate() {
+            if (this.editText.trim().length) {
+                updateRecordingName(encodeURI(this.editText), this.data.audio_file_name)
+            }
+        },
+        updateText(event) {
+            this.editText = event.target.innerText;
+        },
         toggle() {
             this.show = !this.show;
         },
-        formatTranscript(transcript) {
-            let firstIndex = transcript.indexOf('SPEAKER');
-            if (firstIndex !== -1) {
-                // Find subsequent occurrences starting from the position after the first occurrence
-                let subsequentOccurrences = transcript.slice(firstIndex + 'SPEAKER'.length).replace(/SPEAKER/g, '<br><br>SPEAKER');
-                // Concatenate the transcript with the modified subsequent occurrences
-                return transcript.slice(0, firstIndex) + 'SPEAKER' + subsequentOccurrences;
-            }
-            return transcript;
+        formatText(text) {
+            return text.replace(/\n/g, '<br>');
         },
         async remove() {
             await removeSummary(this.data.audio_file_name)
@@ -86,9 +112,13 @@ export default {
 }
 </script>
 <style scoped>
-    .clip {
-        padding: 12px 0px;
-        text-align: left;
-        border-bottom: 1px solid #E1E1E1;
-    }
+.clip {
+    padding: 12px 0px;
+    text-align: left;
+    border-bottom: 1px solid #E1E1E1;
+}
+
+.icon-small {
+    font-size: 1em;
+}
 </style>
