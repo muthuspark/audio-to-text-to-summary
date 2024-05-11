@@ -3,9 +3,6 @@
 </template>
 <script>
 export default {
-  props: {
-    stream: Object
-  },
   data() {
     return {
       elapsedTime: 0,

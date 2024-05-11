@@ -22,11 +22,11 @@
         <div class="row">
             <div class="eight columns">
                 <div class="small-header">Full Transcript</div>
-                <p v-html="formatText(data.transcript)"></p>
+                <p v-html="convertNewLinesToBR(data.transcript)"></p>
             </div>
             <div class="four columns">
                 <div class="small-header">Summary</div>
-                <p v-if="data.summary.length" v-html="formatText(data.summary)"></p>
+                <p v-if="data.summary.length" v-html="convertNewLinesToBR(data.summary)"></p>
                 <div v-if="data.summary.length == 0">
                     <div>Summarization in progress</div>
                     <progress />
@@ -37,12 +37,14 @@
 </template>
 <script>
 import { removeSummary, getSummaryById } from '@/api';
+import { convertNewLinesToBR } from '@/util'
 
 import WaveSurfer from '@/components/WaveSurfer.vue';
 
 export default {
     data() {
         return {
+            convertNewLinesToBR,
             show: false,
             editText: '',
             data: null
@@ -76,12 +78,6 @@ export default {
                 }
             )
         },
-        toggle() {
-            this.show = !this.show;
-        },
-        formatText(text) {
-            return text.replace(/\n/g, '<br>');
-        },
         async remove() {
             await removeSummary(this.data.audio_file_name)
             this.emitter.emit('reload-soundclips');
@@ -96,8 +92,7 @@ export default {
         }
     },
     async mounted() {
-        const summary = await getSummaryById(this.$route.params.id)
-        this.data = summary;
+        this.data = await getSummaryById(this.$route.params.id);
     }
 }
 </script>
