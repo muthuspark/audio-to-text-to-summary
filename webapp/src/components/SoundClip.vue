@@ -1,7 +1,7 @@
 <template>
     <div class="clip" :id="data.name">
         <div class="row">
-            <div class="eight columns">{{ data.name }}</div>
+            <div class="eight columns">{{ decodeURI(data.name) }}</div>
             <div class="four columns summarizing">Summarizing.. <progress v-if="summarizing" /></div>
         </div>
         <div class="row">

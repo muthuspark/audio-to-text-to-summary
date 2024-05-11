@@ -13,6 +13,28 @@ export function getSummaries() {
   });
 }
 
+export function getSummaryById(_id) {
+  const raw = JSON.stringify({
+    "id": _id
+  });
+
+  const myHeaders = new Headers();
+  myHeaders.append("Content-Type", "application/json");
+
+  return new Promise((resolve, reject) => {
+    fetch('/get_summary', { method: 'POST', body: raw, headers: myHeaders, })
+      .then(response => response.json())
+      .then(data => {
+        console.log(data);
+        resolve(data);
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        reject(error);
+      });
+  });
+}
+
 export function removeSummary(audio_file_name) {
 
   const raw = JSON.stringify({

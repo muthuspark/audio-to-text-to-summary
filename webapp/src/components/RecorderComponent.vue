@@ -37,8 +37,11 @@
     </div>
     <div class="docs-section">
       <h6 class="docs-header">Summaries</h6>
-      <SummariesComponent v-for="(clip, index) in summarizedRecordings" :data="clip" :key="index">
-      </SummariesComponent>
+      <div class="row" v-for="(clip, index) in summarizedRecordings" :key="index">
+        <div class="ten columns">
+          <RouterLink :to="'/summary/'+ clip.id">{{ decodeURI(clip.recording_name) }}</RouterLink>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -46,7 +49,6 @@
 import AudioVisualizer from './AudioVisualizer.vue'
 import StopWatch from './StopWatch.vue'
 import SoundClip from './SoundClip.vue'
-import SummariesComponent from './SummariesComponent.vue'
 import { getFormattedDate, slugify } from '@/util'
 import { getSummaries } from '@/api'
 
@@ -55,8 +57,7 @@ export default {
   components: {
     AudioVisualizer,
     StopWatch,
-    SoundClip,
-    SummariesComponent
+    SoundClip
   },
   data() {
     return {

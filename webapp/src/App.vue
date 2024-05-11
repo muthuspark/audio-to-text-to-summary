@@ -7,17 +7,9 @@
         </ul>
       </div>
     </nav>
-    <RecorderComponent/>
+    <main>
+      <RouterView />
+    </main>
     <vue3-confirm-dialog></vue3-confirm-dialog>
   </div>
 </template>
-<script>
-import RecorderComponent from './components/RecorderComponent.vue'
-
-export default {
-  name: 'App',
-  components: {
-    RecorderComponent
-  }
-}
-</script>
