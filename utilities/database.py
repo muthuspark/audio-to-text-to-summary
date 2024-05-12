@@ -1,4 +1,6 @@
-from tinydb import TinyDB, Query, where
+from tinydb import TinyDB, Query
+from datetime import datetime
+from uuid import uuid4
 
 _db = TinyDB("database.json")
 
@@ -8,12 +10,15 @@ TranscriptQuery = Query()
 def create_record(audio_file_name, recording_name):
     result = _db.search(TranscriptQuery.audio_file_name.matches(audio_file_name))
     if not result:
+        timestamp = datetime.now().isoformat()
         record_id = _db.insert({
+            'id': str(uuid4()),
             'recording_name': recording_name,
             'audio_file_name': audio_file_name,
             'tracks': "",
             'transcript': "",
-            'summary': ""
+            'summary': "",
+            'timestamp': timestamp
         })
         print(f"New record created for {audio_file_name} with ID: {record_id}")
     record = _db.get(TranscriptQuery.audio_file_name.matches(audio_file_name))
@@ -50,8 +55,12 @@ def update_recording_name(audio_id, recording_name):
     }, doc_ids=[audio_id])
 
 
-def get_by_id(audio_id):
-    return _db.get(TranscriptQuery.doc_id.matches(audio_id))
+def get_by_doc_id(doc_id):
+    return _db.get(TranscriptQuery.doc_id.matches(doc_id))
+
+
+def get_by_id(_id):
+    return _db.get(TranscriptQuery.id.matches(_id))
 
 
 def get_all():

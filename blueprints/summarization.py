@@ -12,7 +12,7 @@ from dotenv import dotenv_values
 from llm import chat_with_llama
 from pipelines import diarization_pipeline, audio_transcription_pipeline
 from utilities.database import create_record, update_tracks, update_transcript, update_summary, get_by_id, get_all, \
-    update_audio_file_name, is_summarizing_completed_for_recording, remove, update_recording_name
+    update_audio_file_name, is_summarizing_completed_for_recording, remove, update_recording_name, get_by_doc_id
 from utilities.request_queue import PersistentQueue
 from utilities.util import is_mp3, is_wav, is_webm, get_path_in_wav_format
 from pydub import AudioSegment
@@ -35,6 +35,13 @@ def summarize_conversation():
 @summarize_routes_blueprint.route('/get_summaries', methods=['POST'])
 def get_summaries():
     return get_all()
+
+
+@summarize_routes_blueprint.route('/get_summary', methods=['POST'])
+def get_summary():
+    json_data = request.json
+    _id = json_data['id']
+    return get_by_id(_id)
 
 
 @summarize_routes_blueprint.route('/remove_summary', methods=['POST'])
@@ -109,7 +116,7 @@ def extract_summary_from_audio(audio_file_path, recording_name):
             summary = chat_with_llama(message)
             update_summary(audio_id, summary)
 
-        return get_by_id(audio_id)
+        return get_by_doc_id(audio_id)
     logger.debug(f'Unknown file format')
     return "error"
 

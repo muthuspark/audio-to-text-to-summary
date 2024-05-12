@@ -14,6 +14,7 @@
     "audiomotion-analyzer": "^4.4.0",
     "core-js": "^3.8.3",
     "mitt": "^3.0.1",
+    "notyf": "^3.10.0",
     "vue": "^3.2.13",
     "vue-audio-recorder": "^3.0.1",
     "vue-router": "^4.3.2",

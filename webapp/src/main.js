@@ -1,6 +1,8 @@
 // Import Vue.js
 import { createApp } from 'vue';
 import { createWebHashHistory, createRouter } from 'vue-router';
+import { Notyf } from 'notyf';
+import 'notyf/notyf.min.css';
 
 // Import main application component
 import App from './App.vue';
@@ -14,6 +16,7 @@ import 'vue3-confirm-dialog/style';
 
 // Import event emitter for cross-component communication
 import mitt from 'mitt';
+
 
 // Define application routes
 const routes = [
@@ -29,6 +32,9 @@ const router = createRouter({
 
 // Create a new Vue application instance
 const app = createApp(App);
+
+// Create an instance of Notyf
+app.config.globalProperties.$toast = new Notyf();
 
 // Install Vue3ConfirmDialog plugin
 app.use(Vue3ConfirmDialog);

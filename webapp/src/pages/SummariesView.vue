@@ -73,6 +73,7 @@ export default {
                     callback: async confirm => {
                         if (confirm) {
                             await app.remove()
+                            app.$toast.success("Summary deleted", { duration: 2000 });
                         }
                     }
                 }

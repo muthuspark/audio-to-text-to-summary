@@ -39,7 +39,7 @@
       <h6 class="docs-header">Summaries</h6>
       <div class="row" v-for="(clip, index) in summarizedRecordings" :key="index">
         <div class="ten columns">
-          <RouterLink :to="'/summary/'+ clip.id">{{ decodeURI(clip.recording_name) }}</RouterLink>
+          <RouterLink :to="'/summary/' + clip.id">{{ decodeURI(clip.recording_name) }}</RouterLink>
         </div>
       </div>
     </div>
@@ -75,10 +75,14 @@ export default {
   },
   methods: {
     initEvents() {
-      this.emitter.on('recording-started', () => this.recording = true)
+      this.emitter.on('recording-started', () => {
+        this.recording = true;
+        this.$toast.success("Recording started");
+      })
       this.emitter.on('recording-stopped', () => {
         this.recording = false;
         this.title = '';
+        this.$toast.success("Recording stopped");
       })
       this.emitter.on('reload-soundclips', this.summaries)
     },
@@ -99,15 +103,14 @@ export default {
       };
 
       this.recognition.onerror = event => {
-        console.error('Speech recognition error:', event.error);
+        this.$toast.error('Speech recognition error:' + event.error);
       };
 
       this.recognition.onnomatch = () => {
-        console.log('No speech was recognized.');
+        this.$toast.error('No speech was recognized.');
       };
     },
-    mediaRecorderOnStop({ data }) {
-      console.log("Last data to read (after MediaRecorder.stop() called).", data);
+    mediaRecorderOnStop() {
       const blob = new Blob(this.chunks, { type: this.mediaRecorder.mimeType });
       this.chunks = [];
       this.audioClips.push({
@@ -116,7 +119,6 @@ export default {
         download: `${slugify(this.title)}.webm`,
         blob,
       });
-      console.log("recorder stopped");
       this.emitter.emit('recording-stopped');
     },
     mediaRecorderOndataavailable({ data }) {
@@ -130,7 +132,7 @@ export default {
         this.mediaRecorder.ondataavailable = this.mediaRecorderOndataavailable;
         await this.mediaRecorder.start();
       } catch (error) {
-        console.error('Error starting MediaRecorder:', error);
+        this.$toast.error('Error starting MediaRecorder:' + error);
       }
     },
     async record() {
@@ -144,7 +146,7 @@ export default {
         await this.getUserMediaOnSuccess(stream);
       } catch (error) {
         this.recordingSupported = false;
-        console.error('Error getting user media:', error);
+        this.$toast.error('Error getting user media:' + error);
       }
     },
     stop() {
