@@ -74,6 +74,7 @@ export default {
                         if (confirm) {
                             await app.remove()
                             app.$toast.success("Summary deleted", { duration: 2000 });
+                            location.href = "/"
                         }
                     }
                 }
@@ -93,7 +94,11 @@ export default {
         }
     },
     async mounted() {
-        this.data = await getSummaryById(this.$route.params.id);
+        try{
+            this.data = await getSummaryById(this.$route.params.id);
+        }catch(e){
+            this.$toast.error(e.message, { duration: 2000 });
+        }
     }
 }
 </script>

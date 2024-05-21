@@ -1,22 +1,22 @@
 import http
+import os
 import queue
 import subprocess
-
-from flask import Blueprint, jsonify
-from flask import request
-import os
 import tempfile
 import threading
-from dotenv import dotenv_values
 
+from dotenv import dotenv_values
+from flask import Blueprint, jsonify
+from flask import request
+from pydub import AudioSegment
+
+from database.transcripts_table import create_record, update_tracks, update_transcript, update_summary, get_all, \
+    update_audio_file_name, is_summarizing_completed_for_recording, remove, update_recording_name, get_by_id
 from llm import chat_with_llama
+from logging_config import logger
 from pipelines import diarization_pipeline, audio_transcription_pipeline
-from utilities.database import create_record, update_tracks, update_transcript, update_summary, get_by_id, get_all, \
-    update_audio_file_name, is_summarizing_completed_for_recording, remove, update_recording_name, get_by_doc_id
 from utilities.request_queue import PersistentQueue
 from utilities.util import is_mp3, is_wav, is_webm, get_path_in_wav_format
-from pydub import AudioSegment
-from logging_config import logger
 
 summarize_routes_blueprint = Blueprint('summarize', __name__)
 
@@ -86,7 +86,7 @@ def summarize_conversation_worker():
 def extract_summary_from_audio(audio_file_path, recording_name):
     logger.debug(f'Started processing summarization for {audio_file_path}')
     audio_summary_record = create_record(audio_file_path, recording_name)
-    audio_id = audio_summary_record.doc_id
+    audio_id = audio_summary_record.id
     if is_mp3(audio_file_path):
         audio_file_path = convert_mp3_to_wav(audio_file_path)
         logger.debug(f'Converted mp3 to wav and stored at {audio_file_path}')
@@ -96,27 +96,27 @@ def extract_summary_from_audio(audio_file_path, recording_name):
         logger.debug(f'Converted mp3 to wav and stored at {audio_file_path}')
         update_audio_file_name(audio_id, audio_file_path)
     if is_wav(audio_file_path):
-        if not audio_summary_record['tracks']:
+        if not audio_summary_record.tracks:
             logger.debug(f'Started Diarization of {audio_file_path}')
             tracks = audio_diarization(audio_file_path)
             update_tracks(audio_id, tracks)
-            audio_summary_record['tracks'] = tracks
+            audio_summary_record.tracks = tracks
             logger.debug(f'Diarization completed successfully')
 
-        if not audio_summary_record['transcript']:
+        if not audio_summary_record.transcript:
             logger.debug(f'Started transcribing process')
-            transcript = split_audio_and_transcribe(audio_file_path, audio_summary_record['tracks'])
+            transcript = split_audio_and_transcribe(audio_file_path, audio_summary_record.tracks)
             logger.debug(f'Transcribing complete')
             transcript = '\n'.join(transcript)
             update_transcript(audio_id, transcript)
-            audio_summary_record['transcript'] = transcript
+            audio_summary_record.transcript = transcript
 
-        if not audio_summary_record['summary']:
-            message = f"Give me a long summary of this transcript \n {audio_summary_record['transcript']}"
+        if not audio_summary_record.summary:
+            message = f"Give me a long summary of this transcript \n {audio_summary_record.transcript}"
             summary = chat_with_llama(message)
             update_summary(audio_id, summary)
 
-        return get_by_doc_id(audio_id)
+        return get_by_id(audio_id)
     logger.debug(f'Unknown file format')
     return "error"
 
