@@ -10,6 +10,7 @@ from flask import Blueprint, jsonify
 from flask import request
 from pydub import AudioSegment
 
+from blueprints.auth import token_required
 from database.transcripts_table import create_record, update_tracks, update_transcript, update_summary, get_all, \
     update_audio_file_name, is_summarizing_completed_for_recording, remove, update_recording_name, get_by_id
 from llm import chat_with_llama
@@ -33,11 +34,13 @@ def summarize_conversation():
 
 
 @summarize_routes_blueprint.route('/get_summaries', methods=['POST'])
+@token_required
 def get_summaries():
     return get_all()
 
 
 @summarize_routes_blueprint.route('/get_summary', methods=['POST'])
+@token_required
 def get_summary():
     json_data = request.json
     _id = json_data['id']
