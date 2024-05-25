@@ -1,12 +1,39 @@
-import queue
+import json
 import os
+import queue
 
 
 # Request class to store request data
 class PersistentQueueRequest:
-    def __init__(self, data, recording_name):
-        self.data = data
+    user_id = ''
+    recording_name = ''
+    filename = ''
+
+    def __init__(self, user_id: str, recording_name: str, filename: str):
+        self.user_id = user_id
         self.recording_name = recording_name
+        self.filename = filename
+
+    @staticmethod
+    def from_json(data_str: str):
+        data_dict = json.loads(data_str)
+        return PersistentQueueRequest(data_dict["user_id"], data_dict["recording_name"], data_dict["filename"])
+
+    def to_json(self):
+        """Converts a PersistentQueueData object to a JSON string.
+
+          Args:
+              data: An instance of the PersistentQueueData class.
+
+          Returns:
+              A JSON string representing the data object.
+          """
+        data_dict = {
+            "user_id": self.user_id,
+            "recording_name": self.recording_name,
+            "filename": self.filename,
+        }
+        return json.dumps(data_dict)
 
 
 # Queue with custom put and get methods
@@ -24,24 +51,24 @@ class PersistentQueue(queue.Queue):
         if os.path.exists(self.file_path):
             self.load_from_file()
 
-    def put(self, item, block=True, timeout=None):
+    def put(self, data: PersistentQueueRequest, block=True, timeout=None):
         # Persist request data to file
         with open(self.file_path, 'a') as file:
-            file.write(f"{item.data}\n")
-        super().put(item, block, timeout)
+            file.write(f"{data.to_json()}\n")
+        super().put(data, block, timeout)
 
     def get(self, block=True, timeout=None):
-        item = super().get(block, timeout)
+        data = super().get(block, timeout)
         # Remove request data from file
-        self.remove_from_file(item.data)
-        return item
+        self.remove_from_file(data.to_json())
+        return data
 
     def load_from_file(self):
         if os.path.exists(self.file_path):
             with open(self.file_path, 'r') as file:
                 for line in file:
-                    data = line.strip()
-                    request = Request(data)
+                    data_str = line.strip()
+                    request = PersistentQueueRequest.from_json(data_str)
                     self.put(request)
 
     def remove_from_file(self, data):

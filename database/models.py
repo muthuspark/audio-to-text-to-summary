@@ -12,6 +12,7 @@ class Transcript(Base):
     __tablename__ = 'transcripts'
 
     id = Column(String, primary_key=True)
+    user_id = Column(String, primary_key=True)
     recording_name = Column(String)
     audio_file_name = Column(String, unique=True)
     tracks = Column(String)

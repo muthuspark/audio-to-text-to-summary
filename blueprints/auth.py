@@ -29,6 +29,12 @@ auth_routes_blueprint = Blueprint('auth', __name__)
 user_clients = {}
 
 
+def get_user_id(auth_header):
+    token = auth_header.split()[1]  # Extract token from "Bearer <token>" format
+    data = jwt.decode(token, config.get("FLASK_SECRET"), algorithms=['HS256'])
+    return data['user_id']
+
+
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -36,14 +42,12 @@ def token_required(f):
         if not auth_header:
             return jsonify({'message': 'Missing token'}), 401
         try:
-            token = auth_header.split()[1]  # Extract token from "Bearer <token>" format
-            data = jwt.decode(token, config.get("FLASK_SECRET"), algorithms=['HS256'])
-            client = user_clients[data['user_id']]
-            if not client.is_authenticated():
-                return jsonify({'message': 'Invalid token'}), 403
+            get_user_id(auth_header)
+            # client = user_clients[get_user_id(auth_header)]
+            # if not client.is_authenticated():
+            #     return jsonify({'message': 'Invalid token'}), 403
         except jwt.DecodeError:
             return jsonify({'message': 'Invalid token'}), 403
-
         return f(*args, **kwargs)
 
     return decorated

@@ -1,16 +1,16 @@
 import http
 import os
-import queue
 import subprocess
 import tempfile
 import threading
+import time
 
 from dotenv import dotenv_values
 from flask import Blueprint, jsonify
 from flask import request
 from pydub import AudioSegment
 
-from blueprints.auth import token_required
+from blueprints.auth import token_required, get_user_id
 from database.transcripts_table import create_record, update_tracks, update_transcript, update_summary, get_all, \
     update_audio_file_name, is_summarizing_completed_for_recording, remove, update_recording_name, get_by_id
 from llm import chat_with_llama
@@ -36,7 +36,8 @@ def summarize_conversation():
 @summarize_routes_blueprint.route('/get_summaries', methods=['POST'])
 @token_required
 def get_summaries():
-    return get_all()
+    user_id = get_user_id(request.headers.get('Authorization'))
+    return get_all(user_id)
 
 
 @summarize_routes_blueprint.route('/get_summary', methods=['POST'])
@@ -48,6 +49,7 @@ def get_summary():
 
 
 @summarize_routes_blueprint.route('/remove_summary', methods=['POST'])
+@token_required
 def remove_summary():
     json_data = request.json
     audio_file_name = json_data['audio_file_name']
@@ -55,6 +57,7 @@ def remove_summary():
 
 
 @summarize_routes_blueprint.route('/update_title', methods=['POST'])
+@token_required
 def update_title():
     json_data = request.json
     audio_file_name = json_data['audio_file_name']
@@ -63,6 +66,7 @@ def update_title():
 
 
 @summarize_routes_blueprint.route('/summarizing_completed', methods=['POST'])
+@token_required
 def is_summarizing_completed():
     json_data = request.json
     recording_name = json_data['recording_name']
@@ -75,20 +79,17 @@ def is_summarizing_completed():
 def summarize_conversation_worker():
     while True:
         if not summarization_request_queue.is_empty():
-            try:
-                audio_request = summarization_request_queue.get(block=False)
-            except queue.Empty:
-                # Queue is empty, continue to the next iteration
-                continue
-            audio_file_path = os.path.join(config.get("UPLOAD_FOLDER"), audio_request.data)
+            audio_request = summarization_request_queue.get(block=False)
+            audio_file_path = os.path.join(config.get("UPLOAD_FOLDER"), audio_request.filename)
             if os.path.exists(audio_file_path):
-                extract_summary_from_audio(audio_file_path, audio_request.recording_name)
+                extract_summary_from_audio(audio_file_path, audio_request)
                 summarization_request_queue.task_done()
+        time.sleep(1)
 
 
-def extract_summary_from_audio(audio_file_path, recording_name):
+def extract_summary_from_audio(audio_file_path, audio_request):
     logger.debug(f'Started processing summarization for {audio_file_path}')
-    audio_summary_record = create_record(audio_file_path, recording_name)
+    audio_summary_record = create_record(audio_file_path, audio_request)
     audio_id = audio_summary_record.id
     if is_mp3(audio_file_path):
         audio_file_path = convert_mp3_to_wav(audio_file_path)

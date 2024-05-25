@@ -6,10 +6,11 @@ from sqlalchemy.exc import IntegrityError
 
 from database import Session
 from database.models import Transcript
+from utilities.request_queue import PersistentQueueRequest
 from utilities.responses import success, error_404, error_500
 
 
-def create_record(audio_file_name, recording_name):
+def create_record(audio_file_name, audio_request: PersistentQueueRequest):
     # Create a new session
     session = Session()
     record = None
@@ -22,7 +23,8 @@ def create_record(audio_file_name, recording_name):
             timestamp = datetime.now()
             record = Transcript(
                 id=str(uuid4()),
-                recording_name=recording_name,
+                user_id=audio_request.user_id,
+                recording_name=audio_request.recording_name,
                 audio_file_name=audio_file_name,
                 tracks="",
                 transcript="",
@@ -224,13 +226,13 @@ def get_by_name(audio_file_name):
         session.close()
 
 
-def get_all():
+def get_all(user_id):
     # Create a new session
     session = Session()
 
     try:
         # Query all records from the Transcript table
-        records = session.query(Transcript).all()
+        records = session.query(Transcript).filter_by(user_id=user_id).all()
         # Convert SQLAlchemy objects to dictionaries
         record_dicts = [record.__dict__ for record in records]
 

@@ -1,11 +1,12 @@
+import http
 import os
 import uuid
-import http
-from dotenv import dotenv_values
 
-from flask import Blueprint, request, jsonify, send_file
+from dotenv import dotenv_values
+from flask import Blueprint, request, jsonify
 from werkzeug.utils import secure_filename
 
+from blueprints.auth import token_required, get_user_id
 from blueprints.summarization import summarization_request_queue
 from logging_config import logger
 from utilities.request_queue import PersistentQueueRequest
@@ -17,7 +18,7 @@ fileio_routes_blueprint = Blueprint('fileio_routes', __name__)
 ALLOWED_EXTENSIONS = {'wav', 'mp3', 'webm'}
 
 
-def allowed_file(filename):
+def _allowed_file(filename):
     """
     Check if the uploaded file has a valid audio extension.
 
@@ -31,6 +32,7 @@ def allowed_file(filename):
 
 
 @fileio_routes_blueprint.route('/upload', methods=['POST'])
+@token_required
 def upload_audio():
     """
     Flask route for uploading an audio file.
@@ -55,25 +57,31 @@ def upload_audio():
         logger.error('No audio file selected for uploading')
         return jsonify({'error': 'No audio file selected for uploading'}), http.HTTPStatus.BAD_REQUEST
 
-    if not allowed_file(audio_file.filename):
+    if not _allowed_file(audio_file.filename):
         logger.error('Invalid audio file format')
         return jsonify({'error': 'Invalid audio file format'}), http.HTTPStatus.BAD_REQUEST
 
-    unique_filename = create_unique_name(audio_file)
+    unique_filename = _create_unique_name(audio_file)
     upload_path = os.path.join(config.get("UPLOAD_FOLDER"), unique_filename)
 
     try:
         os.makedirs(config.get("UPLOAD_FOLDER"), exist_ok=True)
         audio_file.save(upload_path)
         logger.info(f'Audio file uploaded successfully: {unique_filename}')
-        summarization_request_queue.put(PersistentQueueRequest(unique_filename, recording_name))
+        _send_for_summarization(recording_name, unique_filename)
         return jsonify({'message': 'Audio file uploaded successfully', 'filename': unique_filename}), http.HTTPStatus.OK
     except Exception as e:
         logger.error(f'Error uploading audio file: {e}')
         return jsonify({'error': 'Error uploading audio file'}), http.HTTPStatus.INTERNAL_SERVER_ERROR
 
 
-def create_unique_name(audio_file):
+def _send_for_summarization(recording_name, unique_filename):
+    user_id = get_user_id(request.headers.get('Authorization'))
+    data = PersistentQueueRequest(user_id, recording_name, unique_filename)
+    summarization_request_queue.put(data)
+
+
+def _create_unique_name(audio_file):
     """
     Create a unique filename for the uploaded audio file.
 
