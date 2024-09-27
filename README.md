@@ -64,7 +64,30 @@ Rename `.env_sample` to `.env` and fill in the variables following steps below.
         pip install -r requirements.txt
         ```
 
-3. **Run the Flask Application**:
+3. **Start Postgres from docker file**:
+   - Run the below command from project directory
+     ```commandline
+     docker compose up 
+     ```
+   
+   Expect something like this to appear in your command line 
+   ```commandline
+   [+] Running 0/0
+    ⠋ Container postgres_db  Recreated                                                                                                                                                0.0s 
+   Attaching to postgres_db
+   postgres_db  | 
+   postgres_db  | PostgreSQL Database directory appears to contain a database; Skipping initialization
+   postgres_db  | 
+   postgres_db  | 2024-09-27 02:37:28.706 UTC [1] LOG:  starting PostgreSQL 16.3 (Debian 16.3-1.pgdg120+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit
+   postgres_db  | 2024-09-27 02:37:28.706 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+   postgres_db  | 2024-09-27 02:37:28.706 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+   postgres_db  | 2024-09-27 02:37:28.710 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+   postgres_db  | 2024-09-27 02:37:28.716 UTC [29] LOG:  database system was shut down at 2024-07-03 00:50:43 UTC
+   postgres_db  | 2024-09-27 02:37:28.723 UTC [1] LOG:  database system is ready to accept connections
+
+   ```
+
+4. **Run the Flask Application**:
     - Run the following command to start the flask service:
 
         ```
