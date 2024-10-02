@@ -15,7 +15,7 @@ app = Flask(__name__)
 app.config.from_object(__name__)
 
 CORS(app, resources={r'/*': {'origins': '*'}})
-app.config['SECRET_KEY'] = config.get("FLASK_SECRET")
+app.config['SECRET_KEY'] = config.get("FLASK_SECRET_KEY")
 client_cache.init_app(app)
 
 # Register the blueprint

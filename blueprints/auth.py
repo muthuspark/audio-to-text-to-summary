@@ -31,7 +31,7 @@ user_clients = {}
 
 def get_user_id(auth_header):
     token = auth_header.split()[1]  # Extract token from "Bearer <token>" format
-    data = jwt.decode(token, config.get("FLASK_SECRET"), algorithms=['HS256'])
+    data = jwt.decode(token, config.get("FLASK_SECRET_KEY"), algorithms=['HS256'])
     return data['user_id']
 
 
@@ -81,5 +81,5 @@ def callback():
         'user_id': user.get("id")
     }
     user_clients[user.get("id")] = kinde_client
-    token = jwt.encode(payload, config.get("FLASK_SECRET"), algorithm='HS256')
-    return redirect(f"http://localhost:8080/home?token={token}")
+    token = jwt.encode(payload, config.get("FLASK_SECRET_KEY"), algorithm='HS256')
+    return redirect(f"{config.get('AUDIO_TO_TEXT_SUMMARY_WEB_APP_HOME')}/home?token={token}")
